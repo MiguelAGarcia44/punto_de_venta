@@ -1,0 +1,90 @@
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* La barra superior de botones */
+  .nav-bar {
+    display: flex;
+    background-color: #2c3e50;
+    padding: 15px;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  .nav-btn {
+    padding: 10px 20px;
+    background-color: #34495e;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+  }
+  
+  .nav-btn:hover {
+    background-color: #1abc9c;
+  }
+
+  /* El rectángulo grande central */
+  .main-container {
+    max-width: 1000px;
+    margin: 20px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+
+  /* Estilos rápidos para tu formulario de productos */
+  .formulario-grid {
+    display: grid;
+    /* Cambiamos de 2 columnas (1fr 1fr) a 1 sola columna (1fr) */
+    grid-template-columns: 1fr; 
+    gap: 20px;
+  }
+
+  /* (Opcional) Si quieres que en computadora sí se vean 2 columnas pero en celular solo 1, puedes agregar esto: */
+  @media (min-width: 768px) {
+    .formulario-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  fieldset {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 15px;
+  }
+  
+  label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit; /* Para que use el mismo tipo de letra */
+  }
+
+  .btn-guardar {
+    margin-top: 20px;
+    padding: 12px 25px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+  }

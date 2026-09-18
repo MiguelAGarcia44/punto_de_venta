@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto de Venta</title>
+    
+    <!-- Conectamos el diseño -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Librería para la cámara -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+    
+    <!-- MENÚ DE NAVEGACIÓN -->
+    <div class="nav-bar">
+      <button class="nav-btn" onclick="cambiarPestana('vista-consulta')">🔍 Consulta</button>
+      <button class="nav-btn" onclick="cambiarPestana('vista-agregar')">➕ Nuevo Producto</button>
+      <button class="nav-btn" onclick="cambiarPestana('vista-modificar')">✏️ Modificar</button>
+      <button class="nav-btn" onclick="cambiarPestana('vista-venta')">🛒 Venta</button>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="main-container">
+        <!-- ========================================== -->
+        <!-- MÓDULO 1: CONSULTA -->
+        <!-- ========================================== -->
+        <div id="vista-consulta" class="vista-modulo">
+            <h2>Consulta de Precios e Inventario</h2>
+            <!-- 1. PANEL DE BÚSQUEDA -->
+            <div style="background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                <label style="font-weight: bold; margin-right: 10px;">Buscar por:</label>
+                <select id="tipo_busqueda_consulta" style="width: 150px; display: inline-block;">
+                <option value="codigo">Código de Barras</option>
+                <option value="nombre">Nombre del Producto</option>
+                </select>
+                
+                <input type="text" id="termino_busqueda_consulta" placeholder="Escanea o escribe..." style="width: 250px; display: inline-block; margin-left: 10px;" onkeypress="manejarEnterConsulta(event)">
+                
+                <!-- NUEVO: Botón de Cámara -->
+                <button class="nav-btn" onclick="abrirCamaraConsulta()" style="margin-left: 10px; background-color: #e67e22;">📷 Cámara</button>
+                <button class="nav-btn" onclick="ejecutarBusquedaConsulta()" style="margin-left: 10px; background-color: #27ae60;">🔍 Buscar</button>
+
+                <!-- TRUCO: Input tipo archivo oculto que abre la cámara directo -->
+                <input type="file" accept="image/*" capture="environment" id="lector_camara_consulta" style="display: none;" onchange="procesarFotoCodigo(event)">
+                <!-- TRUCO 2: Un contenedor invisible que la librería necesita para trabajar -->
+                <div id="lector_falso" style="width: 300px; height: 300px; position: absolute; left: -9999px;"></div>
+            </div>
+
+            <!-- 2. TABLA DE COINCIDENCIAS (Solo aparece si buscas por Nombre y hay varios) -->
+            <div id="contenedor_tabla_consulta" style="display: none; margin-bottom: 20px;">
+                <p style="color: #666;">Se encontraron varios productos. Selecciona uno para ver el detalle:</p>
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background: #34495e; color: white;">
+                    <th style="padding: 10px; border: 1px solid #ccc;">Código</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">Nombre</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">Precio Unitario</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">Precio Caja</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla_resultados_consulta">
+                    <!-- Las filas se llenarán con Javascript -->
+                </tbody>
+                </table>
+            </div>
+
+            <!-- 3. TARJETA DE RESULTADO FINAL (Aparece directo si es código de barras) -->
+            <div id="tarjeta_producto_consulta" style="display: none; background: white; border: 2px solid #2980b9; border-radius: 8px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                
+                <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 id="lbl_nombre_consulta" style="margin: 0; color: #2c3e50; font-size: 26px;">-</h3>
+                <span id="lbl_id_consulta" style="background: #e9ecef; padding: 5px 10px; border-radius: 5px; color: #666; font-weight: bold;">-</span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Columna Izquierda: Precios -->
+                <div>
+                    <p style="margin: 5px 0; color: #7f8c8d; font-size: 14px;">Precio Venta Unitario:</p>
+                    <p id="lbl_precio_consulta" style="margin: 0; font-size: 40px; font-weight: bold; color: #27ae60;">$-</p>
+                    
+                    <p style="margin: 15px 0 5px; color: #7f8c8d; font-size: 14px;">Precio Venta por Caja:</p>
+                    <p id="lbl_precio_caja_consulta" style="margin: 0; font-size: 22px; font-weight: bold; color: #2980b9;">$-</p>
+                </div>
+                
+                <!-- Columna Derecha: Logística -->
+                <div style="border-left: 2px solid #eee; padding-left: 20px;">
+                    <p style="margin: 5px 0; color: #7f8c8d; font-size: 14px;">Ubicación Física:</p>
+                    <p id="lbl_ubicacion_consulta" style="margin: 0; font-size: 20px; font-weight: bold; color: #2c3e50;">-</p>
+                    
+                    <p style="margin: 15px 0 5px; color: #7f8c8d; font-size: 14px;">Stock Disponible:</p>
+                    <p id="lbl_stock_consulta" style="margin: 0; font-size: 18px; font-weight: bold; color: #d35400;">- Unidades / - Cajas</p>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MÓDULO 2: AGREGAR -->
+        <!-- ========================================== -->
+        <div id="vista-agregar" class="vista-modulo" style="display:none;">
+            <!-- ⚠️ AQUÍ PEGARÁS EL CÓDIGO DE agregar.html -->
+                <div class="contenedor-modulo">
+                    <h2>Dar de Alta Nuevo Producto</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Llena los datos del artículo. El ID se generará solo.</p>
+
+                    <form id="formulario_agregar">
+                        <div class="formulario-grid">
+                        
+                        <!-- SECCIÓN A: Datos del Producto -->
+                        <fieldset>
+                            <legend>Información Principal</legend>
+                            
+                            <label>ID Interno (Generado Automáticamente)</label>
+                            <!-- Campo bloqueado y sombreado -->
+                            <input type="text" id="id_producto_agregar" readonly style="background-color: #e9ecef; cursor: not-allowed; font-weight: bold; color: #2c3e50;">
+
+                            <label>Código de Barras</label>
+                            <div style="display: flex; gap: 10px;">
+                            <input type="text" id="codigo_de_barras_agregar" placeholder="Escanea o escribe" style="flex: 1; margin-top: 0;">
+                            <button type="button" class="nav-btn" onclick="abrirCamaraAgregar()" style="background-color: #e67e22; margin-top: 0; padding: 0 15px;">📷</button>
+                            </div>
+                            
+                            <!-- Mecanismo oculto para Agregar -->
+                            <input type="file" accept="image/*" capture="environment" id="lector_camara_agregar" style="display: none;" onchange="procesarFotoAgregar(event)">
+                            <div id="lector_falso_agregar" style="width: 300px; height: 300px; position: absolute; left: -9999px;"></div>
+
+
+                            <label>Tipo / Categoría *</label>
+                            <select id="tipo_producto_agregar" required>
+                            <option value="" disabled selected>Seleccione una categoría...</option>
+                            <option value="Tienda">Tienda</option>
+                            <option value="Papeleria">Papelería</option>
+                            <option value="Juguetes">Juguetes</option>
+                            <option value="Herramientas">Herramientas</option>
+                            </select>
+                            
+                            <label>Nombre del Producto *</label>
+                            <input type="text" id="nombre_producto_agregar" required>
+
+                            <label>Marca</label>
+                            <input type="text" id="marca_producto_agregar">
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>Precios</legend>
+                            
+                            <label>Costo Unitario Proveedor</label>
+                            <input type="number" id="precio_unitario_proveedor_agregar">
+
+                            <label>Costo Caja Proveedor</label>
+                            <input type="number" id="precio_caja_proveedor_agregar">
+
+                            <label>Precio Venta Unitario *</label>
+                            <input type="number" id="precio_venta_unitario_agregar" required>
+
+                            <label>Precio Venta Caja</label>
+                            <input type="number" id="precio_venta_caja_agregar">
+                        </fieldset>
+
+                        <!-- SECCIÓN B: Logística e Inventario -->
+                        <fieldset>
+                            <legend>Inventario y Ubicación</legend>
+                            
+                            <label>Ubicación Física</label>
+                            <input type="text" id="ubicacion_fisica_agregar" placeholder="Ej. Estante 2">
+
+                            <label>Stock en Cajas</label>
+                            <input type="number" id="stock_cajas_agregar">
+
+                            <label>Stock en Unidades</label>
+                            <input type="number" id="stock_unidades_agregar">
+
+                            <label>Punto de Reorden (Alarma Mínimo)</label>
+                            <input type="number" id="punto_reorden_agregar">
+                        </fieldset>
+                        </div>
+
+                        <button type="button" class="btn-guardar" onclick="procesarGuardadoAgregar()">Guardar Nuevo Producto</button>
+                    </form>
+                </div>            
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MÓDULO 3: MODIFICAR -->
+        <!-- ========================================== -->
+        <div id="vista-modificar" class="vista-modulo" style="display:none;">
+            <div class="contenedor-modulo">
+                <h2>Buscar y Modificar Producto</h2>
+                <!-- 1. PANEL DE BÚSQUEDA -->
+                <div style="background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <label style="font-weight: bold; margin-right: 10px;">Buscar por:</label>
+                    <select id="tipo_busqueda_modificar" style="width: 150px; display: inline-block;">
+                    <option value="nombre">Nombre</option>
+                    <option value="codigo">Cód. de Barras</option>
+                    <option value="id">ID Interno</option>
+                    </select>
+                    <input type="text" id="termino_busqueda_modificar" placeholder="Escanea o escribe..." style="width: 250px; display: inline-block; margin-left: 10px;">
+                    <!-- NUEVO: Botón de Cámara para Modificar -->
+                    <button class="nav-btn" onclick="abrirCamaraModificar()" style="margin-left: 10px; background-color: #e67e22;">📷 Cámara</button>
+                    <button class="nav-btn" onclick="ejecutarBusquedaModificar()" style="margin-left: 10px;">🔍 Buscar</button>
+                    <!-- Mecanismo oculto para Modificar -->
+                    <input type="file" accept="image/*" capture="environment" id="lector_camara_modificar" style="display: none;" onchange="procesarFotoModificar(event)">
+                    <div id="lector_falso_modificar" style="width: 300px; height: 300px; position: absolute; left: -9999px;"></div>
+                </div>
+                <!-- 2. TABLA DE RESULTADOS (Oculta por defecto) -->
+                <div id="contenedor_resultados_modificar" style="display: none; margin-bottom: 20px;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background: #34495e; color: white;">
+                        <th style="padding: 10px; border: 1px solid #ccc;">ID</th>
+                        <th style="padding: 10px; border: 1px solid #ccc;">Nombre</th>
+                        <th style="padding: 10px; border: 1px solid #ccc;">Precio Venta</th>
+                        <th style="padding: 10px; border: 1px solid #ccc;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla_resultados_modificar">
+                        <!-- Las filas se llenarán con Javascript -->
+                    </tbody>
+                    </table>
+                </div>
+                <!-- 3. FORMULARIO DE EDICIÓN (Oculto hasta que se seleccione un producto) -->
+                <div id="contenedor_formulario_modificar" style="display: none;">
+                    <hr>
+                    <h3 style="color: #2980b9;">Actualizando datos del producto...</h3>                    
+                    <form id="formulario_modificar">
+                    <div class="formulario-grid">
+                        <fieldset>
+                        <legend>Información Principal</legend>
+                        <label>ID Interno (No editable)</label>
+                        <input type="text" id="id_producto_modificar" readonly style="background-color: #e9ecef; font-weight: bold; color: #2c3e50;">
+
+                        <label>Código de Barras</label>
+                        <input type="text" id="codigo_de_barras_modificar">
+
+                        <label>Tipo / Categoría *</label>
+                        <select id="tipo_producto_modificar" required>
+                            <option value="" disabled>Seleccione una categoría...</option>
+                            <option value="Tienda">Tienda</option>
+                            <option value="Papeleria">Papelería</option>
+                            <option value="Juguetes">Juguetes</option>
+                            <option value="Herramientas">Herramientas</option>
+                        </select>
+
+                        <label>Nombre del Producto *</label>
+                        <input type="text" id="nombre_producto_modificar" required>
+
+                        <label>Marca</label>
+                        <input type="text" id="marca_producto_modificar">
+                        </fieldset>
+
+                        <fieldset>
+                        <legend>Precios</legend>
+                        <label>Costo Unitario Proveedor</label>
+                        <input type="number" id="precio_unitario_proveedor_modificar">
+                        <label>Costo Caja Proveedor</label>
+                        <input type="number" id="precio_caja_proveedor_modificar">
+                        <label>Precio Venta Unitario *</label>
+                        <input type="number" id="precio_venta_unitario_modificar" required>
+                        <label>Precio Venta Caja</label>
+                        <input type="number" id="precio_venta_caja_modificar">
+                        </fieldset>
+
+                        <fieldset>
+                        <legend>Inventario y Ubicación</legend>
+                        <label>Ubicación Física</label>
+                        <input type="text" id="ubicacion_fisica_modificar">
+                        <label>Stock en Cajas</label>
+                        <input type="number" id="stock_cajas_modificar">
+                        <label>Stock en Unidades</label>
+                        <input type="number" id="stock_unidades_modificar">
+                        <label>Punto de Reorden</label>
+                        <input type="number" id="punto_reorden_modificar">
+                        </fieldset>
+                    </div>
+                    <button type="button" class="btn-guardar" onclick="procesarGuardadoModificar()" style="background-color: #2980b9;">Actualizar Producto</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MÓDULO 4: VENTA -->
+        <!-- ========================================== -->
+        <div id="vista-venta" class="vista-modulo" style="display:none;">
+            
+             <!-- ⚠️ AQUÍ PEGARÁS EL CÓDIGO DE venta.html -->
+            
+        </div>
+        
+    </div>
+    <!-- Conectamos la lógica -->
+    <script src="app.js"></script>    
+</body>
+</html>
